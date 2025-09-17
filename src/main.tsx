@@ -18,16 +18,17 @@ async function startApp() {
       });
       
       await sleep(100);
-      console.log('MSW started');
+      console.log('[TALENTFLOW] MSW has been started successfully.');
     } catch(err){
-      console.warn('MSW failed to start',err);
+      console.warn('[TALENTFLOW] MSW failed to start.',err);
     }
 
     try {
       const { seedDB } = await import('./db/seed');
       await seedDB();
+      console.log('[TALENTFLOW] IndexedDB has been seeded.');
     } catch (err) {
-      console.error('Seeding failed:', err);
+      console.error('[TALENTFLOW] Seeding failed:', err);
     }
   
 
