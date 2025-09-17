@@ -5,7 +5,7 @@ import App from './App';
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function startApp() {
-  if (import.meta.env.DEV) {
+  
     try{
       const {worker} = await import('./api/msw/browser');
       await worker.start({
@@ -29,7 +29,7 @@ async function startApp() {
     } catch (err) {
       console.error('Seeding failed:', err);
     }
-  }
+  
 
   const root = createRoot(document.getElementById('root')!);
   root.render(<App />);
