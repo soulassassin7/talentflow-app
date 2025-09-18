@@ -71,7 +71,7 @@ const JobDetailsPage: React.FC = () => {
     mutationFn: (newCandidate: Partial<Candidate>) => candidatesService.create(newCandidate),
     onSuccess: () => {
         setIsCreateModalOpen(false);
-        queryClient.invalidateQueries({ queryKey: ['candidates', { jobId: job?.id }] });
+        queryClient.invalidateQueries({ queryKey: ['candidates'] });
         triggerFeedback('Candidate added successfully!', 'success');
     },
     onError: (error) => {
@@ -79,7 +79,7 @@ const JobDetailsPage: React.FC = () => {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         triggerFeedback(`Error: ${errorMessage}`, 'error', 4000);
     }
-  });
+});
   
   const handleCandidateMove = (candidateId: string, newStage: Stage, note?: string) => {
     updateCandidateMutation.mutate({ candidateId, stage: newStage, note });

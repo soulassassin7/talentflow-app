@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 
 const Home = () => {
   const { data: jobsData } = useJobs({ pageSize: 1000 });
-  const { data: candidatesData } = useCandidates({ pageSize: 1000 });
+  const { data: candidatesData } = useCandidates({ pageSize: 1000});
   
   const [stats, setStats] = useState({
     activeJobs: 0,
@@ -15,10 +15,10 @@ const Home = () => {
     screeningRate: 0
   });
 
-  useEffect(() => {
+useEffect(() => {
     if (jobsData && candidatesData) {
       const activeJobs = jobsData.items.filter(job => job.status === 'active').length;
-      const totalCandidates = candidatesData.items.length;
+      const totalCandidates = candidatesData.total;  
 
       const thisMonth = new Date();
       thisMonth.setDate(1);
