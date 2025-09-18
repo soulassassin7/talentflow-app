@@ -59,6 +59,89 @@ TalentFlow is a comprehensive front-end recruitment platform that enables HR tea
 
 ## 🏗️ Architecture & Decisions
 
+### Project Structure
+```
+TALENTFLOW
+├── dist
+├── dist-seed
+├── node_modules
+├── public
+├── src
+│   ├── api
+│   │   ├── msw
+│   │   │   ├── browser.ts
+│   │   │   └── handlers.ts
+│   │   └── client.ts
+│   ├── components
+│   │   ├── ui
+│   │   │   ├── button.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── FeedbackPopup.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── label.tsx
+│   │   │   ├── Modal.tsx
+│   │   │   └── select.tsx
+│   │   ├── AppLayout.tsx
+│   │   ├── CandidateCard.tsx
+│   │   ├── CandidateForm.tsx
+│   │   ├── DndCandidateCard.tsx
+│   │   ├── DndJobCard.tsx
+│   │   ├── Footer.tsx
+│   │   ├── Header.tsx
+│   │   ├── JobCard.tsx
+│   │   ├── JobForm.tsx
+│   │   ├── KanbanBoard.tsx
+│   │   ├── KanbanColumn.tsx
+│   │   ├── NoteForm.tsx
+│   │   └── ScrollToTop.tsx
+│   ├── db
+│   │   ├── dexie.ts
+│   │   └── seed.ts
+│   ├── hooks
+│   │   ├── useAssessment.ts
+│   │   ├── useCandidate.ts
+│   │   ├── useCandidates.ts
+│   │   ├── useJob.ts
+│   │   └── useJobs.ts
+│   ├── lib
+│   │   └── utils.ts
+│   ├── pages
+│   │   ├── Assessments
+│   │   │   ├── AssessmentBuilder.tsx
+│   │   │   ├── AssessmentPreview.tsx
+│   │   │   ├── AssessmentsPage.tsx
+│   │   │   ├── OptionsBuilder.tsx
+│   │   │   └── QuestionBuilder.tsx
+│   │   ├── Candidates
+│   │   │   ├── CandidateProfilePage.tsx
+│   │   │   └── CandidatesList.tsx
+│   │   └── Jobs
+│   │       ├── JobDetails.tsx
+│   │       └── JobsList.tsx
+│   │   └── Home.tsx
+│   ├── services
+│   │   ├── assessmentsService.ts
+│   │   ├── candidatesService.ts
+│   │   └── jobsService.ts
+│   ├── types
+│   │   └── index.ts
+│   ├── App.tsx
+│   ├── index.css
+│   └── main.tsx
+├── .gitignore
+├── components.json
+├── eslint.config.js
+├── index.html
+├── package-lock.json
+├── package.json
+├── README.md
+├── tailwind.config.js
+├── tsconfig.app.json
+├── tsconfig.json
+├── tsconfig.node.json
+├── vercel.json
+└── vite.config.ts
+```
 ### State Management
 The application's state management is intentionally separated into distinct categories, using the best tool for each job:
 
