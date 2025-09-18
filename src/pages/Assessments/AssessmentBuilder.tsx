@@ -1,5 +1,4 @@
-
-import React, { useEffect, useCallback,useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useJob } from '../../hooks/useJob';
 import { ArrowLeftIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/solid';
@@ -13,79 +12,94 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+
+import { useAssessment } from '../../hooks/useAssessment';
+import { assessmentsService } from '../../services/assessmentsService';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+
 const AssessmentBuilderPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
-  const { data: job, isLoading, isError } = useJob({ slug });
+  const { data: job, isLoading: isLoadingJob, isError: isErrorJob } = useJob({ slug });
+  const { data: initialAssessment, isLoading: isLoadingAssessment } = useAssessment(job?.id);
+  const queryClient = useQueryClient();
+
+
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [feedbackType, setFeedbackType] = useState<'success' | 'error'>('success');
 
   const methods = useForm<Assessment>({
-    defaultValues: { jobId: job?.id, title: '', sections: [] }
+    defaultValues: { jobId: '', title: '', sections: [] }
   });
-  const { control, handleSubmit, getValues, reset } = methods;
+  const { control, handleSubmit, reset } = methods;
   
-  const storageKey = `assessment-${job?.id}`;
-  
+  const storageKey = `assessment-draft-${job?.id}`;
+
   useEffect(() => {
-    const savedStateJSON = localStorage.getItem(storageKey);
-    if (savedStateJSON) {
+    if (!job) return;
+    const savedDraftJSON = localStorage.getItem(storageKey);
+    if (savedDraftJSON) {
       try {
-        const savedState = JSON.parse(savedStateJSON);
-        reset(savedState);
-      } catch (e) {
-        console.error("Failed to parse saved assessment state", e);
-      }
-    } else if (job) {
+        reset(JSON.parse(savedDraftJSON));
+      } catch (e) { console.error("Failed to parse draft", e); }
+    } else if (initialAssessment) {
+      reset(initialAssessment);
+    } else {
       reset({ jobId: job.id, title: `${job.title} Assessment`, sections: [] });
     }
-  }, [job, reset, storageKey]);
-
-  const saveStateToLocalStorage = useCallback(() => {
-    if (job?.id) {
-        const currentState = getValues();
-        localStorage.setItem(storageKey, JSON.stringify(currentState));
-    }
-  }, [job, getValues, storageKey]);
-
-  useEffect(() => {
-    return () => {
-      saveStateToLocalStorage();
-    };
-  }, [saveStateToLocalStorage]);
+  }, [job, initialAssessment, reset, storageKey]);
 
   const { fields: sectionFields, append: appendSection, remove: removeSection } = useFieldArray({
     control,
     name: "sections"
   });
 
-  const triggerFeedback = (message: string) => {
+
+  const triggerFeedback = (message: string, type: 'success' | 'error' = 'success') => {
     setFeedbackMessage(message);
+    setFeedbackType(type);
     setShowFeedback(true);
-    setTimeout(() => setShowFeedback(false), 2000);
+    setTimeout(() => setShowFeedback(false), 3000);
   };
 
-  if (isLoading) return (
+
+  const saveAssessmentMutation = useMutation({
+    mutationFn: (data: Assessment) => assessmentsService.save(job!.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assessment', job?.id] });
+      localStorage.removeItem(storageKey);
+      triggerFeedback('Assessment saved successfully!', 'success');
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "An unknown error occurred.";
+      triggerFeedback(`Save failed: ${message}`, 'error');
+    }
+  });
+  
+
+  const onSubmit = (data: Assessment) => {
+
+    localStorage.setItem(storageKey, JSON.stringify(data));
+    saveAssessmentMutation.mutate(data);
+  };
+
+  if (isLoadingJob || isLoadingAssessment) return (
     <div className="flex items-center justify-center min-h-[400px]">
       <div className="text-center">
         <div className="w-8 h-8 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-sm text-gray-400">Loading...</p>
+        <p className="text-sm text-gray-400">Loading Assessment Builder...</p>
       </div>
     </div>
   );
   
-  if (isError || !job) return (
+  if (isErrorJob || !job) return (
     <div className="flex items-center justify-center min-h-[400px]">
       <div className="rounded-2xl bg-red-500/10 backdrop-blur-xl border border-red-500/20 p-8">
         <p className="text-red-400">Error: Job not found.</p>
       </div>
     </div>
   );
-
-  const onSubmit = (data: Assessment) => {
-    console.log("Form Submitted:", data);
-    localStorage.setItem(storageKey, JSON.stringify(data));
-    triggerFeedback('Assessment saved successfully!');
-  };
 
   return (
     <>
@@ -107,11 +121,16 @@ const AssessmentBuilderPage: React.FC = () => {
           <Button 
             type="submit" 
             className="bg-emerald-500 hover:bg-emerald-600 text-black shadow-lg shadow-emerald-500/25 transition-all hover:shadow-emerald-500/40 hover:scale-105"
+            disabled={saveAssessmentMutation.isPending}
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            Save Assessment
+            {saveAssessmentMutation.isPending ? (
+              <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin mr-2"></div>
+            ) : (
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+            {saveAssessmentMutation.isPending ? 'Saving...' : 'Save Assessment'}
           </Button>
         </div>
         
@@ -172,7 +191,12 @@ const AssessmentBuilderPage: React.FC = () => {
         </div>
       </form>
     </FormProvider>
-    <FeedbackPopup message={feedbackMessage} show={showFeedback} />
+
+    <FeedbackPopup 
+      message={feedbackMessage} 
+      show={showFeedback} 
+      type={feedbackType} 
+    />
     </>
   );
 };

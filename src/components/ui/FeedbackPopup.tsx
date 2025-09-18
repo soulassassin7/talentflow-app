@@ -68,7 +68,7 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ message, show, type = 'su
     const styles = getStyles();
 
     return (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 animate-slide-down">
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[200] animate-slide-down">
             <div className={`
                 flex items-center gap-3 px-5 py-3 rounded-lg
                 ${styles.bg} ${styles.border} border

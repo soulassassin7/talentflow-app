@@ -13,12 +13,15 @@ const QUESTION_TYPES: { value: QuestionType, label: string }[] = [
     { value: 'single-choice', label: 'Single Choice' },
     { value: 'multi-choice', label: 'Multiple Choice' },
     { value: 'numeric', label: 'Numeric' },
+    { value: 'file', label: 'File Upload' },
 ];
 
 const SingleQuestionEditor: React.FC<{ sectionIndex: number; questionIndex: number; remove: () => void; }> = React.memo(({ sectionIndex, questionIndex, remove }) => {
     const { control, register, setValue } = useFormContext<Assessment>();
 
     const questionType = useWatch({ control, name: `sections.${sectionIndex}.questions.${questionIndex}.type` });
+    const conditionQuestionId = useWatch({ control, name: `sections.${sectionIndex}.questions.${questionIndex}.condition.questionId` });
+    
     const allSections = useWatch({ control, name: 'sections' }) || [];
     const currentQuestionId = useWatch({ control, name: `sections.${sectionIndex}.questions.${questionIndex}.id` });
 
@@ -88,14 +91,15 @@ const SingleQuestionEditor: React.FC<{ sectionIndex: number; questionIndex: numb
                             type="number" 
                             {...register(`sections.${sectionIndex}.questions.${questionIndex}.min`, { valueAsNumber: true })} 
                             placeholder="Min" 
-                            className="w-20 bg-white/[0.03] border-white/10 text-white placeholder:text-gray-600" 
+                            className="w-20 bg-white/[0.03] border-white/10 text-white placeholder:text-gray-600 focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20" 
                         />
                         <span className="text-gray-400">-</span>
                         <Input 
                             type="number" 
                             {...register(`sections.${sectionIndex}.questions.${questionIndex}.max`, { valueAsNumber: true })} 
                             placeholder="Max" 
-                            className="w-20 bg-white/[0.03] border-white/10 text-white placeholder:text-gray-600" 
+
+                            className="w-20 bg-white/[0.03] border-white/10 text-white placeholder:text-gray-600 focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20" 
                         />
                     </div>
                 )}
@@ -104,21 +108,34 @@ const SingleQuestionEditor: React.FC<{ sectionIndex: number; questionIndex: numb
                     <label className="font-medium text-gray-300">Conditional Logic (Optional)</label>
                     <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-gray-400">Show if question</span>
-                        <select 
-                            {...register(`sections.${sectionIndex}.questions.${questionIndex}.condition.questionId`)} 
-                            className="bg-white/[0.03] border border-white/10 text-white rounded-md px-2 py-1 text-sm focus:border-emerald-400/50"
+                        
+                        <Select 
+                            value={conditionQuestionId || ''}
+                            onValueChange={(value) => setValue(`sections.${sectionIndex}.questions.${questionIndex}.condition.questionId`, value === '-' ? '' : value)}
                         >
-                            <option value="" className="bg-[#0f1629]">-</option>
-                            {availableQuestionsForCondition.map(q => 
-                                <option key={q.id} value={q.id} className="bg-[#0f1629]">{`"${q.label || 'Untitled'}"`}</option>
-                            )}
-                        </select>
+                            <SelectTrigger className="flex-1 min-w-[150px] max-w-xs bg-white/[0.03] backdrop-blur-2xl border-white/10 text-white focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20 [&>span]:text-white">
+                                <SelectValue placeholder="-" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-[#0f1629]/50 backdrop-blur-2xl border-white/10 shadow-xl">
+                                <SelectItem value="-" className="text-gray-300 hover:bg-emerald-500/20 hover:text-emerald-400 focus:bg-emerald-500/20 focus:text-emerald-400 transition-colors">-</SelectItem>
+                                {availableQuestionsForCondition.map(q => 
+                                    <SelectItem 
+                                        key={q.id} 
+                                        value={q.id}
+                                        className="text-gray-300 hover:bg-emerald-500/20 hover:text-emerald-400 focus:bg-emerald-500/20 focus:text-emerald-400 transition-colors"
+                                    >
+                                        {`"${q.label || 'Untitled'}"`}
+                                    </SelectItem>
+                                )}
+                            </SelectContent>
+                        </Select>
+
                         <span className="text-gray-400">equals</span>
                         <Input 
                             type="text" 
                             {...register(`sections.${sectionIndex}.questions.${questionIndex}.condition.value`)} 
                             placeholder="e.g., Yes" 
-                            className="w-24 bg-white/[0.03] border-white/10 text-white placeholder:text-gray-600 text-sm py-1" 
+                            className="w-24 bg-white/[0.03] border-white/10 text-white placeholder:text-gray-600 text-sm py-1 focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20" 
                         />
                     </div>
                 </div>

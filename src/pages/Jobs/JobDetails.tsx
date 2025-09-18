@@ -1,14 +1,23 @@
-
 import React, {useState} from 'react';
 import { useParams, useNavigate ,Link} from 'react-router-dom';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
-import { ArrowLeftIcon ,DocumentPlusIcon} from '@heroicons/react/24/solid';
+import { ArrowLeftIcon ,DocumentPlusIcon, UserPlusIcon} from '@heroicons/react/24/solid';
 import { useJob } from '../../hooks/useJob';
 import { useCandidates } from '../../hooks/useCandidates';
 import KanbanBoard from '../../components/KanbanBoard';
 import { candidatesService } from '../../services/candidatesService';
-import type { Stage } from '../../types';
+import type { Candidate, Stage } from '../../types';
 import FeedbackPopup from '../../components/ui/FeedbackPopup';
+import Modal from '../../components/ui/Modal';
+import CandidateForm from '../../components/CandidateForm';
+import { type SubmitHandler } from 'react-hook-form';
+
+type CandidateFormValues = {
+  name: string;
+  email: string;
+  profile: string;
+  jobId?: string; 
+};
 
 const JobDetailsPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -17,17 +26,20 @@ const JobDetailsPage: React.FC = () => {
   const queryClient = useQueryClient();
 
   const { data: job, isLoading: isLoadingJob, isError: isErrorJob } = useJob({slug});
-  const { data: candidatesData, isLoading: isLoadingCandidates, isError: isErrorCandidates } = useCandidates({
-    jobId: job?.id,
-    pageSize: 1000,
-    enabled: !!job?.id
-  });
+  const { data: candidatesData, isLoading: isLoadingCandidates, isError: isErrorCandidates } =
+  useCandidates(
+    { jobId: job?.id, pageSize: 1000 },
+    { enabled: !!job?.id }
+  );
 
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [feedbackType, setFeedbackType] = useState<'success' | 'error'>('success');
 
-  const triggerFeedback = (message: string, duration = 2000) => {
+  const triggerFeedback = (message: string, type: 'success' | 'error' = 'success', duration = 3000) => {
     setFeedbackMessage(message);
+    setFeedbackType(type);
     setShowFeedback(true);
     setTimeout(() => {
       setShowFeedback(false);
@@ -40,22 +52,43 @@ const JobDetailsPage: React.FC = () => {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['candidates', { jobId: job?.id }] });
       if (variables.note && variables.note.trim() !== '') {
-        triggerFeedback('Note saved successfully!', 1000);
+        triggerFeedback('Note saved successfully!', 'success', 1000);
         setTimeout(() => {
-          triggerFeedback('Candidate stage updated!!', 1000);
+          triggerFeedback('Candidate stage updated!', 'success', 1000);
         }, 1500);
       } else {
-        triggerFeedback('Candidate stage updated!',1000);
+        triggerFeedback('Candidate stage updated!', 'success', 1000);
       }
     },
     onError: (error) => {
       console.error("Failed to update candidate, state will be refetched.", error);
+      triggerFeedback('Failed to update stage.', 'error');
       queryClient.invalidateQueries({ queryKey: ['candidates', { jobId: job?.id }] });
+    }
+  });
+
+  const createCandidateMutation = useMutation({
+    mutationFn: (newCandidate: Partial<Candidate>) => candidatesService.create(newCandidate),
+    onSuccess: () => {
+        setIsCreateModalOpen(false);
+        queryClient.invalidateQueries({ queryKey: ['candidates', { jobId: job?.id }] });
+        triggerFeedback('Candidate added successfully!', 'success');
+    },
+    onError: (error) => {
+        setIsCreateModalOpen(false);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        triggerFeedback(`Error: ${errorMessage}`, 'error', 4000);
     }
   });
   
   const handleCandidateMove = (candidateId: string, newStage: Stage, note?: string) => {
     updateCandidateMutation.mutate({ candidateId, stage: newStage, note });
+  };
+
+  const handleCreateCandidateSubmit: SubmitHandler<CandidateFormValues> = (data) => {
+    if (!job) return;
+    const newCandidate = { ...data, jobId: job.id };
+    createCandidateMutation.mutate(newCandidate);
   };
 
   if (isLoadingJob) return (
@@ -73,79 +106,107 @@ const JobDetailsPage: React.FC = () => {
     </div>
   );
 
-  const JobHeader = () => (
-  <div className="rounded-2xl bg-white/[0.02] backdrop-blur-2xl border border-white/10 p-6 shadow-xl">
-    <div className="flex justify-between items-start">
-      <div className="flex-1">
-        <h1 className="text-2xl font-bold text-white">{job.title}</h1>
-        <p className="mt-2 text-sm text-gray-400 max-w-2xl">{job.summary}</p>
+  const JobHeader = () => {
+    const formattedDate = new Date(job.createdAt).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+    });
 
-        <div className="mt-4 flex items-center gap-3">
-          {job.tags.map(tag => (
-            <span key={tag} className="px-2.5 py-1 text-xs font-medium bg-white/[0.05] backdrop-blur-2xl text-gray-300 rounded-md border border-white/10 hover:border-emerald-500/30 transition-colors">
-              {tag}
+    return (
+      <div className="rounded-2xl bg-white/[0.02] backdrop-blur-2xl border border-white/10 p-6 shadow-xl">
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold text-white">{job.title}</h1>
+            <p className="text-xs text-gray-500 mt-2">
+              Posted on {formattedDate}
+            </p>
+            <p className="mt-4 text-sm text-gray-400 max-w-2xl">{job.summary}</p>
+            <div className="mt-4 flex items-center gap-3">
+              {job.tags.map(tag => (
+                <span key={tag} className="px-2.5 py-1 text-xs font-medium bg-white/[0.05] backdrop-blur-2xl text-gray-300 rounded-md border border-white/10 hover:border-emerald-500/30 transition-colors">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <span className={`
+              px-3 py-1 text-sm font-semibold rounded-full backdrop-blur-sm border
+              ${job.status === 'active' 
+                ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' 
+                : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+              }
+            `}>
+              {job.status}
             </span>
-          ))}
+            
+            <Link
+              to={`/assessments/${job.slug}`}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-emerald-500 hover:bg-emerald-600 text-black shadow-lg shadow-emerald-500/25 transition-all hover:shadow-emerald-500/40 hover:scale-105 rounded-lg"
+            >
+              <DocumentPlusIcon className="h-5 w-5" />
+              Build/Edit Assessment
+            </Link>
+          </div>
         </div>
       </div>
-      
-      <div className="flex items-center gap-3">
-        <span className={`
-          px-3 py-1 text-sm font-semibold rounded-full backdrop-blur-sm border
-          ${job.status === 'active' 
-            ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' 
-            : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-          }
-        `}>
-          {job.status}
-        </span>
-        
-        <Link
-          to={`/assessments/${job.slug}`}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-emerald-500 hover:bg-emerald-600 text-black shadow-lg shadow-emerald-500/25 transition-all hover:shadow-emerald-500/40 hover:scale-105 rounded-lg"
-        >
-          <DocumentPlusIcon className="h-5 w-5" />
-          Build/Edit Assessment
-        </Link>
-      </div>
-    </div>
-  </div>
-);
+    );
+  };
 
   return (
     <>
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      <button 
-        onClick={() => navigate(-1)} 
-        className="inline-flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-emerald-400 transition-colors group"
-      >
-        <ArrowLeftIcon className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-        Back to Jobs Board
-      </button>
-      
-      <JobHeader />
-      
-      <div className="rounded-2xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/10 shadow-xl">
-        <div className="p-6 border-b border-white/10">
-          <h2 className="text-xl font-semibold text-white">Candidate Pipeline</h2>
-          {(isLoadingCandidates || isErrorCandidates) ? (
-            <p className="text-sm text-gray-400 mt-1">
-              {isErrorCandidates ? 'Error loading candidates.' : 'Loading candidates...'}
-            </p>
-          ) : (
-            <p className="text-sm text-gray-400 mt-1">{candidatesData?.total ?? 0} total candidates</p>
-          )}
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <button 
+          onClick={() => navigate(-1)} 
+          className="inline-flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-emerald-400 transition-colors group"
+        >
+          <ArrowLeftIcon className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+          Back to Jobs Board
+        </button>
         
-        <div className="p-6">
-          <KanbanBoard
-            initialCandidates={candidatesData?.items || []}
-            onCandidateMove={handleCandidateMove}
-          />
+        <JobHeader />
+        
+        <div className="rounded-2xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/10 shadow-xl">
+          <div className="p-6 border-b border-white/10 flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-semibold text-white">Candidate Pipeline</h2>
+              {(isLoadingCandidates || isErrorCandidates) ? (
+                <p className="text-sm text-gray-400 mt-1">
+                  {isErrorCandidates ? 'Error loading candidates.' : 'Loading candidates...'}
+                </p>
+              ) : (
+                <p className="text-sm text-gray-400 mt-1">{candidatesData?.total ?? 0} total candidates</p>
+              )}
+            </div>
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-emerald-500 hover:bg-emerald-600 text-black shadow-lg shadow-emerald-500/25 transition-all hover:shadow-emerald-500/40 hover:scale-105 rounded-lg"
+              >
+              <UserPlusIcon className="h-5 w-5" />
+              Add Candidate
+            </button>
+          </div>
+          
+          <div className="p-6">
+            <KanbanBoard
+              initialCandidates={candidatesData?.items || []}
+              onCandidateMove={handleCandidateMove}
+            />
+          </div>
         </div>
       </div>
-    </div>
-    <FeedbackPopup message={feedbackMessage} show={showFeedback} />
+      <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="Add New Candidate">
+          <CandidateForm
+              onSubmit={handleCreateCandidateSubmit}
+              onCancel={() => setIsCreateModalOpen(false)}
+              isSubmitting={createCandidateMutation.isPending}
+          />
+      </Modal>
+      <FeedbackPopup message={feedbackMessage} show={showFeedback} type={feedbackType} />
     </>
   );
 };

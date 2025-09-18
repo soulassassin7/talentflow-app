@@ -1,22 +1,82 @@
-
 import React, { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import type { Assessment, Question, AssessmentSection } from '../../types';
 import { Input } from "@/components/ui/input";
 
+
 const PreviewInput: React.FC<{ question: Question, answer: any, onChange: (value: any) => void }> = ({ question, answer, onChange }) => {
-    const { type, label, options = [] } = question;
+    const { type, label, options = [], min, max } = question;
+    
+    const [error, setError] = useState('');
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            onChange(e.target.files[0].name);
+        } else {
+            onChange('');
+        }
+    };
+    
+    const handleNumericChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        onChange(value); 
+
+        if (value === '') {
+            setError('');
+            return;
+        }
+
+        const numValue = Number(value);
+        if (isNaN(numValue)) {
+            setError('Please enter a valid number.');
+            return;
+        }
+
+        let outOfRange = false;
+        if (min !== undefined && numValue < min) {
+            setError(`Value must be ${min} or greater.`);
+            outOfRange = true;
+        }
+        if (max !== undefined && numValue > max) {
+            setError(`Value must be ${max} or less.`);
+            outOfRange = true;
+        }
+
+        if (!outOfRange) {
+            setError('');
+        }
+    };
     
     switch (type) {
-        case 'short-text':
         case 'numeric':
             return (
                 <div>
                     <label className="block text-sm font-medium text-gray-300 mb-1">{label}</label>
                     <Input 
                         value={answer || ''} 
+                        onChange={handleNumericChange}
+                        type='number'
+                        className={`
+                            w-full bg-white/[0.03] border text-white placeholder:text-gray-500 
+                            transition-colors duration-200
+                            ${error 
+                                ? 'border-red-500/50 focus:border-red-500/50 focus:ring-2 focus:ring-red-500/20' 
+                                : 'border-white/10 focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20'
+                            }
+                        `} 
+                    />
+                    {error && <p className="mt-1.5 text-xs text-red-400">{error}</p>}
+                </div>
+            );
+
+        case 'short-text':
+            return (
+                <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">{label}</label>
+                    <Input 
+                        value={answer || ''} 
                         onChange={(e) => onChange(e.target.value)} 
-                        type={type === 'numeric' ? 'number' : 'text'} 
+                        type='text' 
                         className="w-full bg-white/[0.03] border-white/10 text-white placeholder:text-gray-500 focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20" 
                     />
                 </div>
@@ -111,6 +171,32 @@ const PreviewInput: React.FC<{ question: Question, answer: any, onChange: (value
                   </div>
               );
             
+        case 'file':
+            return (
+                <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">{label}</label>
+                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md border-white/20 hover:border-emerald-500/30 transition-colors">
+                        <div className="space-y-1 text-center">
+                            <svg className="mx-auto h-12 w-12 text-gray-500" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                            <div className="flex text-sm text-gray-400">
+                                <label htmlFor={question.id} className="relative cursor-pointer bg-transparent rounded-md font-medium text-emerald-400 hover:text-emerald-300 focus-within:outline-none">
+                                    <span>Upload a file</span>
+                                    <input id={question.id} name={question.id} type="file" className="sr-only" onChange={handleFileChange} />
+                                </label>
+                                <p className="pl-1">or drag and drop</p>
+                            </div>
+                             {answer ? (
+                                <p className="text-xs text-emerald-400">{answer}</p>
+                            ) : (
+                                <p className="text-xs text-gray-500">PNG, JPG, PDF up to 10MB</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+
         default:
             return null;
     }

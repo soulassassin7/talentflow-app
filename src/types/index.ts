@@ -11,6 +11,7 @@ export interface Job {
     order: number;
     createdAt: number;
     summary: string;
+    
 }
 
 export interface JobsResponse {

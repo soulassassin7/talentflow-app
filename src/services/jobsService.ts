@@ -15,9 +15,15 @@ export const jobsService = {
     return db.jobs.get(id);
   },
   
-  getBySlug: (slug: string): Promise<Job | undefined> => {
-    return db.jobs.where('slug').equals(slug).first();
+  getBySlug: async (slug: string): Promise<Job | null> => {
+    try {
+      const job = await client(`jobs/slug/${slug}`);
+      return job ?? null;
+    } catch (err) {
+      return null;
+    }
   },
+
 
   create: (payload: Partial<Job>) => {
     return client('jobs', { method: 'POST', body: payload });

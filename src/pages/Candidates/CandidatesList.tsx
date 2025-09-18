@@ -1,30 +1,72 @@
 import React, { useRef, useState, useMemo } from 'react';
 import { useCandidates } from '../../hooks/useCandidates';
-import type { Stage } from '../../types';
+import type { Candidate, Job, Stage } from '../../types';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Link } from 'react-router-dom';
-import { MagnifyingGlassIcon } from '@heroicons/react/24/solid';
+import { MagnifyingGlassIcon, UserPlusIcon } from '@heroicons/react/24/solid';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
+import { useJobs } from '../../hooks/useJobs';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { candidatesService } from '../../services/candidatesService';
+import Modal from '../../components/ui/Modal';
+import CandidateForm from '../../components/CandidateForm';
+import { type SubmitHandler } from 'react-hook-form';
+import FeedbackPopup from '../../components/ui/FeedbackPopup';
 
 const STAGES: Stage[] = ['applied', 'screen', 'tech', 'offer', 'hired', 'rejected'];
+
+type CandidateFormValues = {
+  name: string;
+  email: string;
+  profile: string;
+  jobId?: string;
+};
 
 const CandidatesListPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [stageFilter, setStageFilter] = useState('');
+  const queryClient = useQueryClient();
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [feedbackType, setFeedbackType] = useState<'success' | 'error'>('success');
 
   const { data, isLoading, isError, error } = useCandidates({ 
-    pageSize: 1000, 
+    pageSize: 10000, 
     stage: stageFilter
   });
+  
+  const { data: jobsData } = useJobs({ status: 'active', pageSize: 1000 });
+  const activeJobs = jobsData?.items || [];
+
+  const createCandidateMutation = useMutation({
+    mutationFn: (newCandidate: Partial<Candidate>) => candidatesService.create(newCandidate),
+    onSuccess: () => {
+      setIsModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['candidates'] });
+      triggerFeedback('Candidate added successfully!', 'success');
+    },
+    onError: (err) => {
+      setIsModalOpen(false);
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+      triggerFeedback(`Error: ${errorMessage}`, 'error', 4000);
+    }
+  });
+
+  const handleCreateSubmit: SubmitHandler<CandidateFormValues> = (data) => {
+    createCandidateMutation.mutate(data);
+  };
+
+  const triggerFeedback = (message: string, type: 'success' | 'error' = 'success', duration = 3000) => {
+    setFeedbackMessage(message);
+    setFeedbackType(type);
+    setShowFeedback(true);
+    setTimeout(() => setShowFeedback(false), duration);
+  };
 
   const filteredCandidates = useMemo(() => {
     if (!data?.items) return [];
@@ -125,81 +167,103 @@ const CandidatesListPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Candidates</h1>
-        <p className="text-sm text-gray-400">
-          Manage and track your candidate pipeline
-        </p>
-      </div>
+    <>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">Candidates</h1>
+            <p className="text-sm text-gray-400">
+              Manage and track your candidate pipeline
+            </p>
+          </div>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-emerald-500 hover:bg-emerald-600 text-black shadow-lg shadow-emerald-500/25 transition-all hover:shadow-emerald-500/40 hover:scale-105 rounded-lg"
+          >
+            <UserPlusIcon className="h-5 w-5" />
+            Add Candidate
+          </button>
+        </div>
 
-      <Card className="shadow-sm bg-white/[0.02] backdrop-blur-2xl border border-white/10">
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="search" className="text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Search (Name/Email)
-              </Label>
-              <div className="relative">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
-                <Input
-                  type="text"
-                  id="search"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="e.g., Jane Doe"
-                  className="pl-10 h-11 bg-white/[0.03] backdrop-blur-2xl border-white/10 text-white placeholder:text-gray-500 focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20"
-                />
+        <Card className="shadow-sm bg-white/[0.02] backdrop-blur-2xl border border-white/10">
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="search" className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  Search (Name/Email)
+                </Label>
+                <div className="relative">
+                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                  <Input
+                    type="text"
+                    id="search"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="e.g., Jane Doe"
+                    className="pl-10 h-11 bg-white/[0.03] backdrop-blur-2xl border-white/10 text-white placeholder:text-gray-500 focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="stageFilter" className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  Filter by Stage
+                </Label>
+                <Select 
+                  value={stageFilter || 'all'} 
+                  onValueChange={(value) => setStageFilter(value === 'all' ? '' : value)}
+                >
+                  <SelectTrigger 
+                    id="stageFilter"
+                    className="h-11 bg-white/[0.03] backdrop-blur-2xl border-white/10 text-white focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20 capitalize [&>span]:text-white"
+                  >
+                    <SelectValue placeholder="All Stages" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#0f1629]/50 backdrop-blur-2xl border-white/10 shadow-xl">
+                    <SelectItem value="all" className="text-gray-300 hover:bg-emerald-500/20 hover:text-emerald-400 focus:bg-emerald-500/20 focus:text-emerald-400 transition-colors">
+                      All Stages
+                    </SelectItem>
+                    {STAGES.map(s => (
+                      <SelectItem 
+                        key={s} 
+                        value={s} 
+                        className="text-gray-300 hover:bg-emerald-500/20 hover:text-emerald-400 focus:bg-emerald-500/20 focus:text-emerald-400 transition-colors capitalize"
+                      >
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="stageFilter" className="text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Filter by Stage
-              </Label>
-              <Select 
-                value={stageFilter || 'all'} 
-                onValueChange={(value) => setStageFilter(value === 'all' ? '' : value)}
-              >
-                <SelectTrigger 
-                  id="stageFilter"
-                  className="h-11 bg-white/[0.03] backdrop-blur-2xl border-white/10 text-white focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20 capitalize [&>span]:text-white"
-                >
-                  <SelectValue placeholder="All Stages" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#0f1629]/50 backdrop-blur-2xl border-white/10 shadow-xl">
-                  <SelectItem value="all" className="text-gray-300 hover:bg-emerald-500/20 hover:text-emerald-400 focus:bg-emerald-500/20 focus:text-emerald-400 transition-colors">
-                    All Stages
-                  </SelectItem>
-                  {STAGES.map(s => (
-                    <SelectItem 
-                      key={s} 
-                      value={s} 
-                      className="text-gray-300 hover:bg-emerald-500/20 hover:text-emerald-400 focus:bg-emerald-500/20 focus:text-emerald-400 transition-colors capitalize"
-                    >
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
 
-          <div className="mt-6 pt-6 border-t border-white/10">
-            <div className="text-sm text-gray-400">
-              {data && (
-                <span>Showing {filteredCandidates.length} of {data.total} candidates</span>
-              )}
+            <div className="mt-6 pt-6 border-t border-white/10">
+              <div className="text-sm text-gray-400">
+                {data && (
+                  <span>Showing {filteredCandidates.length} of {data.total} candidates</span>
+                )}
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      <Card className="shadow-sm bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/10">
-        <CardContent className="p-6">
-          {renderContent()}
-        </CardContent>
-      </Card>
-    </div>
+        <Card className="shadow-sm bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/10">
+          <CardContent className="p-6">
+            {renderContent()}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add New Candidate">
+        <CandidateForm
+          onSubmit={handleCreateSubmit}
+          onCancel={() => setIsModalOpen(false)}
+          isSubmitting={createCandidateMutation.isPending}
+          jobs={activeJobs}
+          showJobSelector={true}
+        />
+      </Modal>
+      <FeedbackPopup message={feedbackMessage} show={showFeedback} type={feedbackType} />
+    </>
   );
 };
 

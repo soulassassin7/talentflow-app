@@ -50,7 +50,6 @@ const generateSlug = (title: string): string => {
 const JobsListPage: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [activeId, setActiveId,] = useState<string | null>(null);
-    // State is read directly from the URL, ensuring it persists across navigation.
     const page = Number(searchParams.get('page')) || 1;
     const pageSize = Number(searchParams.get('pageSize')) || 9;
     const status = searchParams.has('status') ? searchParams.get('status') || '' : 'active';
@@ -68,7 +67,7 @@ const JobsListPage: React.FC = () => {
         setTimeout(() => setShowFeedback(false), 2000);
     };
 
-    // State for temporary UI elements like the modal is kept as local component state.
+
     const queryClient = useQueryClient();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingJob, setEditingJob] = useState<Job | null>(null);

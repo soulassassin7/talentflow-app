@@ -32,7 +32,11 @@ const JobCard: React.FC<JobCardProps> = ({ job, onEdit, onArchive, onDelete }) =
     navigate(`/jobs/${job.slug}`);
   };
 
-  
+  const formattedDate = new Date(job.createdAt).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 
   return (
     <div
@@ -62,42 +66,50 @@ const JobCard: React.FC<JobCardProps> = ({ job, onEdit, onArchive, onDelete }) =
       <div className="mt-auto">
         <div className="flex flex-wrap gap-2 mb-4">
           {job.tags.map(tag => (
-<span 
-  key={tag} 
-  className="px-2.5 py-1 text-xs font-medium bg-white/[0.05] backdrop-blur-2xl text-gray-300 rounded-md border border-white/10 hover:border-emerald-500/30 transition-colors"
->
-  {tag}
-</span>
+            <span 
+              key={tag} 
+              className="px-2.5 py-1 text-xs font-medium bg-white/[0.05] backdrop-blur-2xl text-gray-300 rounded-md border border-white/10 hover:border-emerald-500/30 transition-colors"
+            >
+              {tag}
+            </span>
           ))}
         </div>
         
-        <div className="flex justify-end gap-2 pt-4 border-t border-white/10">
-          <button 
-            onClick={handleEditClick} 
-            title="Edit Job" 
-            className="p-2 rounded-lg text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all duration-200"
-          >
-            <PencilSquareIcon className="h-5 w-5" />
-          </button>
-          <button 
-            onClick={handleArchiveClick} 
-            title={job.status === 'active' ? 'Archive Job' : 'Restore Job'} 
-            className="p-2 rounded-lg text-gray-400 hover:text-amber-400 hover:bg-amber-500/10 transition-all duration-200"
-          >
-            {job.status === 'active' ? <ArchiveBoxIcon className="h-5 w-5" /> : <ArrowUturnDownIcon className="h-5 w-5" />}
-          </button>
-          <button 
-            onClick={handleDeleteClick} 
-            title="Delete Job" 
-            className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
-          >
-            <TrashIcon className="h-5 w-5" />
-          </button>
+        {/* MODIFIED: Added a div for the "Posted on" date */}
+        <div className="flex justify-between items-center pt-4 border-t border-white/10">
+          <p className="text-xs text-gray-500 group-hover:text-gray-400 transition-colors">
+            Posted on {formattedDate}
+          </p>
+
+          <div className="flex justify-end gap-2">
+            <button 
+              onClick={handleEditClick} 
+              title="Edit Job" 
+              className="p-2 rounded-lg text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all duration-200"
+            >
+              <PencilSquareIcon className="h-5 w-5" />
+            </button>
+            <button 
+              onClick={handleArchiveClick} 
+              title={job.status === 'active' ? 'Archive Job' : 'Restore Job'} 
+              className="p-2 rounded-lg text-gray-400 hover:text-amber-400 hover:bg-amber-500/10 transition-all duration-200"
+            >
+              {job.status === 'active' ? <ArchiveBoxIcon className="h-5 w-5" /> : <ArrowUturnDownIcon className="h-5 w-5" />}
+            </button>
+            <button 
+              onClick={handleDeleteClick} 
+              title="Delete Job" 
+              className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
+            >
+              <TrashIcon className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </div>
       <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-500/0 to-emerald-500/0 group-hover:from-emerald-500/5 group-hover:to-transparent transition-all duration-300 pointer-events-none" />
     </div>
   );
 };
+
 
 export default JobCard;

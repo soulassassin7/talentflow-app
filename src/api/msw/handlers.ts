@@ -1,6 +1,6 @@
 import {http, HttpResponse} from 'msw';
 import {db} from '../../db/dexie';
-import type {Assessment,Job} from '../../types';
+import type {Assessment,Candidate,Job} from '../../types';
 
 
 const randomLatency = (min=200,max=1200) => new Promise((r)=> setTimeout((r),Math.floor(Math.random()*(max-min)+min)));
@@ -41,20 +41,47 @@ export const handlers=[
         }
     }),
 
-    http.post('/api/jobs', async ({request}) => {
+http.post('/api/jobs', async ({ request }) => {
         await randomLatency();
-        if(randomFailure(0.08)){
-            return HttpResponse.json({message: 'Simulated write failure'},{status: 500});
+        if (randomFailure(0.08)) {
+            return HttpResponse.json({ message: 'Simulated write failure' }, { status: 500 });
         }
-        const payload = await request.json() as Partial<Job>;
-        if (!payload) {
-            return HttpResponse.json({ message: 'Request body is empty' }, { status: 400 });
+        const payload = (await request.json()) as Partial<Job>;
+        if (!payload || !payload.title) {
+            return HttpResponse.json({ message: 'Title is required' }, { status: 400 });
         }
+
+        const id = payload.id ?? crypto.randomUUID();
+
+        const slugBase = (payload.slug ?? payload.title)
+            .toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[^\w-]/g, '')
+            .slice(0, 80);
+
+        let slug = slugBase;
+        let i = 1;
+        while ((await db.jobs.where('slug').equals(slug).count()) > 0) {
+            i += 1;
+            slug = `${slugBase}-${i}`;
+        }
+
         const totalJobs = await db.jobs.count();
-        payload.order = totalJobs + 1;
-        await db.jobs.add(payload as any);
-        return HttpResponse.json(payload,{status: 201});
+        const record: Job = {
+            id,
+            slug,
+            title: payload.title,
+            summary: payload.summary ?? '',
+            tags: payload.tags ?? [],
+            status: payload.status ?? 'active',
+            order: totalJobs + 1,
+            createdAt: payload.createdAt ?? Date.now(),
+        };
+
+        await db.jobs.add(record);
+        return HttpResponse.json(record, { status: 201 });
     }),
+
 
     http.patch('/api/jobs/:id', async({request,params}) => {
         await randomLatency();
@@ -122,6 +149,14 @@ export const handlers=[
         });
         
         return HttpResponse.json({ message: 'Job deleted successfully' });
+    }),
+
+    http.get('/api/jobs/slug/:slug', async ({ params }) => {
+    await randomLatency();
+    const slug = (params as any).slug;
+    const job = await db.jobs.where('slug').equals(slug).first();
+    if (!job) return HttpResponse.json({ message: 'Not found' }, { status: 404 });
+    return HttpResponse.json(job);
     }),
 
     http.get('/api/candidates', async({request})=>{
@@ -197,6 +232,41 @@ export const handlers=[
         
         await db.candidates.put(updated);
         return HttpResponse.json(updated);
+    }),
+
+    http.post('/api/candidates', async ({ request }) => {
+        await randomLatency();
+        if (randomFailure(0.08)) {
+            return HttpResponse.json({ message: 'Simulated candidate creation failure' }, { status: 500 });
+        }
+        
+        try {
+            const payload = (await request.json()) as Partial<Candidate>;
+            if (!payload || !payload.name || !payload.email || !payload.jobId) {
+                return HttpResponse.json({ message: 'Name, email, and jobId are required' }, { status: 400 });
+            }
+
+            const existingCandidate = await db.candidates.where('email').equalsIgnoreCase(payload.email).first();
+            if (existingCandidate) {
+                return HttpResponse.json({ message: 'Email is already taken.' }, { status: 409 });
+            }
+
+            const record: Candidate = {
+                id: crypto.randomUUID(),
+                name: payload.name,
+                email: payload.email,
+                jobId: payload.jobId,
+                profile: payload.profile || 'No profile summary provided.',
+                stage: 'applied',
+                timeline: [],
+            };
+
+            await db.candidates.add(record);
+            return HttpResponse.json(record, { status: 201 });
+        } catch (error) {
+            console.error("Error in POST /api/candidates handler:", error);
+            return HttpResponse.json({ message: 'Failed to save candidate to the database.' }, { status: 500 });
+        }
     }),
 
     http.get('/api/candidates/:id/timeline', async({params})=>{

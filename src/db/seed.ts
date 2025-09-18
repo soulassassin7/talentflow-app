@@ -1,5 +1,6 @@
 import { db } from './dexie';
 import { nanoid } from 'nanoid';
+import type { Assessment, Question } from '../types'; 
 
 
 const FIRST_NAMES = [
@@ -102,6 +103,556 @@ const CANDIDATE_PROFILES = {
 };
 
 
+type TemplateQuestion = Omit<Question, 'id' | 'condition'> & {
+  condition?: {
+    questionLabel: string;
+    value: string;
+  }
+};
+
+const ASSESSMENT_TEMPLATES: {
+  jobTitle: string;
+  assessmentTitle: string;
+  sections: { title: string; questions: TemplateQuestion[] }[]
+}[] = [
+  {
+    jobTitle: "Senior Frontend Engineer (React)",
+    assessmentTitle: "React & Frontend Skills Assessment",
+    sections: [
+      {
+        title: "Experience & Background",
+        questions: [
+          {
+            label: "How many years of professional React experience do you have?",
+            type: 'numeric',
+            required: true,
+            min: 0,
+            max: 20
+          },
+          {
+            label: "How many years of total frontend development experience do you have?",
+            type: 'numeric',
+            required: true,
+            min: 0,
+            max: 25
+          },
+          {
+            label: "What is your current employment status?",
+            type: 'single-choice',
+            required: true,
+            options: [
+              { value: 'Employed' }, 
+              { value: 'Unemployed' }, 
+              { value: 'Freelancing' }, 
+              { value: 'Student' }
+            ]
+          },
+          {
+            label: "Are you open to relocation?",
+            type: 'single-choice',
+            required: true,
+            options: [{ value: 'Yes' }, { value: 'No' }, { value: 'Maybe' }]
+          }
+        ]
+      },
+      {
+        title: "React Core Concepts",
+        questions: [
+          {
+            label: "Which hook is used to perform side effects in a function component?",
+            type: 'single-choice',
+            required: true,
+            options: [{ value: 'useState' }, { value: 'useEffect' }, { value: 'useContext' }, { value: 'useReducer' }]
+          },
+          {
+            label: "What are the key differences between controlled and uncontrolled components?",
+            type: 'long-text',
+            required: true
+          },
+          {
+            label: "Which of the following are valid ways to optimize React performance? (Select all that apply)",
+            type: 'multi-choice',
+            required: true,
+            options: [
+              { value: 'React.memo' }, 
+              { value: 'useMemo' }, 
+              { value: 'useCallback' }, 
+              { value: 'PureComponent' },
+              { value: 'shouldComponentUpdate' },
+              { value: 'Virtual DOM diffing' }
+            ]
+          },
+          {
+            label: "Explain the concept of lifting state up in React.",
+            type: 'long-text',
+            required: true
+          }
+        ]
+      },
+      {
+        title: "TypeScript & Modern JavaScript",
+        questions: [
+          {
+            label: "Are you comfortable with TypeScript?",
+            type: 'single-choice',
+            required: true,
+            options: [{ value: 'Yes' }, { value: 'No' }]
+          },
+          {
+            label: "If yes, please rate your TypeScript proficiency from 1 (Beginner) to 5 (Expert).",
+            type: 'numeric',
+            required: false,
+            min: 1,
+            max: 5,
+            condition: { questionLabel: "Are you comfortable with TypeScript?", value: 'Yes' }
+          },
+          {
+            label: "Which ES6+ features do you use regularly? (Select all that apply)",
+            type: 'multi-choice',
+            required: true,
+            options: [
+              { value: 'Arrow functions' },
+              { value: 'Destructuring' },
+              { value: 'Template literals' },
+              { value: 'Async/Await' },
+              { value: 'Optional chaining' },
+              { value: 'Nullish coalescing' }
+            ]
+          }
+        ]
+      },
+      {
+        title: "State Management & Architecture",
+        questions: [
+          {
+            label: "Which state management libraries have you used in production? (Select all that apply)",
+            type: 'multi-choice',
+            required: true,
+            options: [
+              { value: 'Redux' },
+              { value: 'MobX' },
+              { value: 'Context API' },
+              { value: 'Zustand' },
+              { value: 'Recoil' },
+              { value: 'Jotai' },
+              { value: 'Valtio' }
+            ]
+          },
+          {
+            label: "Describe your approach to structuring a large-scale React application.",
+            type: 'long-text',
+            required: true
+          }
+        ]
+      },
+      {
+        title: "Testing & Quality",
+        questions: [
+          {
+            label: "What testing frameworks/libraries have you used for React? (Select all that apply)",
+            type: 'multi-choice',
+            required: true,
+            options: [
+              { value: 'Jest' },
+              { value: 'React Testing Library' },
+              { value: 'Enzyme' },
+              { value: 'Cypress' },
+              { value: 'Playwright' },
+              { value: 'Vitest' }
+            ]
+          },
+          {
+            label: "What is your target test coverage percentage for frontend code?",
+            type: 'numeric',
+            required: true,
+            min: 0,
+            max: 100
+          }
+        ]
+      },
+      {
+        title: "Practical Experience",
+        questions: [
+          {
+            label: "Describe a time you had to optimize a slow React component. What was the problem and how did you solve it?",
+            type: 'long-text',
+            required: true
+          },
+          {
+            label: "Have you implemented server-side rendering (SSR) or static site generation (SSG)?",
+            type: 'single-choice',
+            required: true,
+            options: [{ value: 'Yes' }, { value: 'No' }]
+          },
+          {
+            label: "If yes, which frameworks have you used for SSR/SSG?",
+            type: 'short-text',
+            required: false,
+            condition: { questionLabel: "Have you implemented server-side rendering (SSR) or static site generation (SSG)?", value: 'Yes' }
+          },
+          {
+            label: "Please provide a link to your GitHub profile or portfolio.",
+            type: 'short-text',
+            required: false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    jobTitle: "UX/UI Designer",
+    assessmentTitle: "Design Skills & Process Review",
+    sections: [
+      {
+        title: "Background & Experience",
+        questions: [
+          {
+            label: "How many years of professional design experience do you have?",
+            type: 'numeric',
+            required: true,
+            min: 0,
+            max: 30
+          },
+          {
+            label: "What type of design work do you specialize in? (Select all that apply)",
+            type: 'multi-choice',
+            required: true,
+            options: [
+              { value: 'Web Design' },
+              { value: 'Mobile Design' },
+              { value: 'Product Design' },
+              { value: 'Visual/Graphic Design' },
+              { value: 'Interaction Design' },
+              { value: 'Service Design' }
+            ]
+          },
+          {
+            label: "Do you have formal design education?",
+            type: 'single-choice',
+            required: true,
+            options: [
+              { value: 'Bachelor\'s in Design' },
+              { value: 'Master\'s in Design' },
+              { value: 'Bootcamp/Course Certificate' },
+              { value: 'Self-taught' }
+            ]
+          }
+        ]
+      },
+      {
+        title: "Design Tools & Technical Skills",
+        questions: [
+          {
+            label: "Which design tools are you proficient in? (Select all that apply)",
+            type: 'multi-choice',
+            required: true,
+            options: [
+              { value: 'Figma' }, 
+              { value: 'Sketch' }, 
+              { value: 'Adobe XD' }, 
+              { value: 'InVision' },
+              { value: 'Framer' },
+              { value: 'Principle' },
+              { value: 'Adobe Creative Suite' },
+              { value: 'Miro/FigJam' }
+            ]
+          },
+          {
+            label: "Rate your proficiency with Figma from 1 (Beginner) to 5 (Expert).",
+            type: 'numeric',
+            required: true,
+            min: 1,
+            max: 5
+          },
+          {
+            label: "Do you have experience with design systems?",
+            type: 'single-choice',
+            required: true,
+            options: [{ value: 'Yes' }, { value: 'No' }]
+          },
+          {
+            label: "If yes, describe a design system you've created or contributed to.",
+            type: 'long-text',
+            required: false,
+            condition: { questionLabel: "Do you have experience with design systems?", value: 'Yes' }
+          }
+        ]
+      },
+      {
+        title: "Design Process & Methodology",
+        questions: [
+          {
+            label: "Briefly describe your approach to user research.",
+            type: 'long-text',
+            required: true
+          },
+          {
+            label: "Which research methods have you used? (Select all that apply)",
+            type: 'multi-choice',
+            required: true,
+            options: [
+              { value: 'User Interviews' },
+              { value: 'Surveys' },
+              { value: 'Usability Testing' },
+              { value: 'A/B Testing' },
+              { value: 'Card Sorting' },
+              { value: 'Journey Mapping' },
+              { value: 'Persona Development' }
+            ]
+          },
+          {
+            label: "How do you balance user needs with business requirements?",
+            type: 'long-text',
+            required: true
+          },
+          {
+            label: "Walk us through your typical design process from brief to final handoff.",
+            type: 'long-text',
+            required: true
+          }
+        ]
+      },
+      {
+        title: "Collaboration & Communication",
+        questions: [
+          {
+            label: "How do you typically collaborate with developers?",
+            type: 'long-text',
+            required: true
+          },
+          {
+            label: "Have you worked in an Agile/Scrum environment?",
+            type: 'single-choice',
+            required: true,
+            options: [{ value: 'Yes' }, { value: 'No' }]
+          },
+          {
+            label: "How do you handle design critique and feedback?",
+            type: 'long-text',
+            required: true
+          }
+        ]
+      },
+      {
+        title: "Portfolio & Work Samples",
+        questions: [
+          {
+            label: "Please provide a link to your portfolio.",
+            type: 'short-text',
+            required: true
+          },
+          {
+            label: "Which project in your portfolio are you most proud of and why?",
+            type: 'long-text',
+            required: true
+          },
+          {
+            label: "Do you have experience with accessibility standards (WCAG)?",
+            type: 'single-choice',
+            required: true,
+            options: [
+              { value: 'Expert level' },
+              { value: 'Good understanding' },
+              { value: 'Basic knowledge' },
+              { value: 'No experience' }
+            ]
+          },
+          {
+            label: "Are you comfortable presenting design work to stakeholders?",
+            type: 'single-choice',
+            required: true,
+            options: [{ value: 'Very comfortable' }, { value: 'Somewhat comfortable' }, { value: 'Not comfortable' }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    jobTitle: "Lead Backend Developer (Node.js)",
+    assessmentTitle: "Node.js & System Design Challenge",
+    sections: [
+      {
+        title: "Experience & Background",
+        questions: [
+          {
+            label: "How many years of professional backend development experience do you have?",
+            type: 'numeric',
+            required: true,
+            min: 0,
+            max: 25
+          },
+          {
+            label: "How many years specifically with Node.js?",
+            type: 'numeric',
+            required: true,
+            min: 0,
+            max: 15
+          },
+          {
+            label: "What size engineering teams have you worked with?",
+            type: 'single-choice',
+            required: true,
+            options: [
+              { value: '1-5 engineers' },
+              { value: '6-20 engineers' },
+              { value: '21-50 engineers' },
+              { value: '50+ engineers' }
+            ]
+          }
+        ]
+      },
+      {
+        title: "Node.js Technical Knowledge",
+        questions: [
+          {
+            label: "What is the Node.js event loop?",
+            type: 'long-text',
+            required: true
+          },
+          {
+            label: "Explain the difference between process.nextTick() and setImmediate().",
+            type: 'long-text',
+            required: true
+          },
+          {
+                        label: "Which Node.js frameworks have you used in production? (Select all that apply)",
+            type: 'multi-choice',
+            required: true,
+            options: [
+              { value: 'Express.js' },
+              { value: 'Koa.js' },
+              { value: 'Fastify' },
+              { value: 'NestJS' },
+              { value: 'Hapi' },
+              { value: 'Restify' }
+            ]
+          }
+        ]
+      },
+      {
+        title: "Database & Architecture",
+        questions: [
+          {
+            label: "Have you worked with microservices architecture?",
+            type: 'single-choice',
+            required: true,
+            options: [{ value: 'Yes' }, { value: 'No' }]
+          },
+          {
+            label: "If yes, please describe a challenge you faced with inter-service communication.",
+            type: 'long-text',
+            required: false,
+            condition: { questionLabel: "Have you worked with microservices architecture?", value: 'Yes' }
+          },
+          {
+            label: "Which databases have you worked with in production? (Select all that apply)",
+            type: 'multi-choice',
+            required: true,
+            options: [
+              { value: 'PostgreSQL' },
+              { value: 'MySQL' },
+              { value: 'MongoDB' },
+              { value: 'Redis' },
+              { value: 'DynamoDB' },
+              { value: 'Cassandra' },
+              { value: 'Elasticsearch' }
+            ]
+          },
+          {
+            label: "How do you approach database optimization and query performance?",
+            type: 'long-text',
+            required: true
+          }
+        ]
+      },
+      {
+        title: "API Design & Security",
+        questions: [
+          {
+            label: "Which API paradigms have you implemented? (Select all that apply)",
+            type: 'multi-choice',
+            required: true,
+            options: [
+              { value: 'REST' },
+              { value: 'GraphQL' },
+              { value: 'gRPC' },
+              { value: 'WebSockets' },
+              { value: 'Server-Sent Events' }
+            ]
+          },
+          {
+            label: "How do you handle authentication and authorization in your APIs?",
+            type: 'long-text',
+            required: true
+          },
+          {
+            label: "Rate your experience with API security best practices from 1 (Beginner) to 5 (Expert).",
+            type: 'numeric',
+            required: true,
+            min: 1,
+            max: 5
+          }
+        ]
+      },
+      {
+        title: "DevOps & Deployment",
+        questions: [
+          {
+            label: "Which cloud platforms have you deployed Node.js applications to? (Select all that apply)",
+            type: 'multi-choice',
+            required: true,
+            options: [
+              { value: 'AWS' },
+              { value: 'Google Cloud Platform' },
+              { value: 'Microsoft Azure' },
+              { value: 'Heroku' },
+              { value: 'DigitalOcean' },
+              { value: 'Vercel' }
+            ]
+          },
+          {
+            label: "Do you have experience with containerization (Docker/Kubernetes)?",
+            type: 'single-choice',
+            required: true,
+            options: [{ value: 'Yes' }, { value: 'No' }]
+          },
+          {
+            label: "Describe your approach to monitoring and logging in production environments.",
+            type: 'long-text',
+            required: true
+          }
+        ]
+      },
+      {
+        title: "Leadership & Team Collaboration",
+        questions: [
+          {
+            label: "Have you mentored junior developers?",
+            type: 'single-choice',
+            required: true,
+            options: [{ value: 'Yes' }, { value: 'No' }]
+          },
+          {
+            label: "If yes, describe your mentoring approach and a success story.",
+            type: 'long-text',
+            required: false,
+            condition: { questionLabel: "Have you mentored junior developers?", value: 'Yes' }
+          },
+          {
+            label: "How do you approach code reviews and maintaining code quality standards?",
+            type: 'long-text',
+            required: true
+          },
+          {
+            label: "Describe a complex technical challenge you solved and the impact it had.",
+            type: 'long-text',
+            required: true
+          }
+        ]
+      }
+    ]
+  }
+];
 
 
 const generateSlug = (title: string): string => {
@@ -115,6 +666,7 @@ export async function seedDB() {
     return;
   }
 
+
   const stages = ['applied','screen','tech','offer','hired','rejected'] as const;
 
   const jobs = JOB_DATA.map((jobData, i) => ({
@@ -124,11 +676,14 @@ export async function seedDB() {
     status: i % 5 === 0 ? 'archived' as const : 'active' as const,
     tags: jobData.tags,
     order: i + 1,
-    createdAt: Date.now() - i * 1000 * 3600,
+    
+    createdAt: Date.now() - i * 1000 * 3600 * 24, 
     summary: jobData.summary,
   }));
   await db.jobs.bulkAdd(jobs);
+  console.log(`Seeded ${jobs.length} jobs.`);
 
+ 
   const candidates = [];
   const generatedEmails = new Set<string>();
 
@@ -161,6 +716,57 @@ export async function seedDB() {
     });
   }
   await db.candidates.bulkAdd(candidates);
+  console.log(`Seeded ${candidates.length} candidates.`);
   
-  console.log('Final intelligent seeding complete.');
+ 
+  const assessmentsToSeed: Assessment[] = [];
+
+
+jobs.forEach((job, index) => {
+  
+  const template = ASSESSMENT_TEMPLATES[index % ASSESSMENT_TEMPLATES.length];
+  
+  const allQuestionsForThisAssessment: Question[] = [];
+  const sections = template.sections.map(section => {
+    const questions: Question[] = section.questions.map(q => ({ ...q, id: nanoid() } as Question));
+    allQuestionsForThisAssessment.push(...questions);
+    return {
+      id: nanoid(),
+      title: section.title,
+      questions: questions
+    };
+  });
+
+  
+  sections.forEach(section => {
+    section.questions.forEach(q => {
+      const templateQuestion = template.sections
+        .flatMap(s => s.questions)
+        .find(tq => tq.label === q.label);
+      
+      if (templateQuestion?.condition?.questionLabel) {
+        const targetQuestion = allQuestionsForThisAssessment.find(aq => aq.label === templateQuestion.condition?.questionLabel);
+        if (targetQuestion) {
+          q.condition = {
+            questionId: targetQuestion.id,
+            value: templateQuestion.condition.value
+          };
+        }
+      }
+    });
+  });
+
+  assessmentsToSeed.push({
+    jobId: job.id,
+    title: `${job.title} Assessment`, 
+    sections: sections,
+  });
+});
+
+if (assessmentsToSeed.length > 0) {
+  await db.assessments.bulkAdd(assessmentsToSeed);
+  console.log(`Seeded ${assessmentsToSeed.length} assessments.`);
+}
+
+console.log('Final intelligent seeding complete.');
 }
