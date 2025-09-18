@@ -160,13 +160,13 @@ const JobDetailsPage: React.FC = () => {
   return (
     <>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        <button 
-          onClick={() => navigate(-1)} 
+        <Link
+          to="/jobs" 
           className="inline-flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-emerald-400 transition-colors group"
         >
           <ArrowLeftIcon className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
           Back to Jobs Board
-        </button>
+        </Link>
         
         <JobHeader />
         
