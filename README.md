@@ -2,9 +2,10 @@
 
 A modern, front-end-only recruitment platform built with React and TypeScript.
 
-**Live Demo** <!-- TODO: Add your deployment link here -->
+**Live Demo**: [https://mdsibtain-talentflow-app.vercel.app](https://mdsibtain-talentflow-app.vercel.app)
 
-This project is a comprehensive implementation of a mini hiring platform, designed to fulfill the requirements of a front-end technical assignment. It features a complete suite of tools for an HR team to manage job postings, track candidates through a hiring pipeline, and build dynamic skill assessments — all without a real backend.
+
+TalentFlow is a comprehensive front-end recruitment platform that enables HR teams to manage job postings, track candidates through a hiring pipeline, and build dynamic skill assessments — all without a real backend.
 
 > **Note:** This is a front-end only application. The "backend" is fully simulated in the browser using Mock Service Worker to intercept API requests and IndexedDB to persist data between sessions.
 
@@ -78,30 +79,35 @@ The core of the application simulates a real-world architecture locally:
 - **Debouncing:** Search inputs on list pages use a debounced handler to prevent excessive API calls while the user types.
 
 ---
-
 ## ⚙️ Project Setup & Installation
 
 Clone the repository:
 
 
-git clone <your-repository-url>
+```
+git clone https://github.com/soulassassin7/talentflow-app
 cd talentflow
+``` 
+
 Install dependencies:
 
-
+```
 npm install
+```
 Run the development server:
 
-
+```
 npm run dev
+```
 The application will be available at http://localhost:5173. MSW and the IndexedDB seeding will start automatically.
 
 Available Scripts
-npm run dev: Starts the development server with Hot Module Replacement.
 
-npm run build: Builds the application for production.
+`npm run dev`: Starts the development server with Hot Module Replacement.
 
-npm run preview: Serves the production build locally for testing.
+`npm run build`: Builds the application for production.
+
+
 
 
 
