@@ -107,7 +107,7 @@ Available Scripts
 
 `npm run build`: Builds the application for production.
 
-## 📝 Issues & Technical Decisions
+## 📝 Known Issues & Workarounds
 
 This section documents key technical challenges I encountered during development and the decisions I made to address them.
 
@@ -148,8 +148,55 @@ This section documents key technical challenges I encountered during development
 - **Challenge:** While `shadcn/ui` + Tailwind CSS worked great, I hit conflicts between the library’s reset classes (like `border-0`) and my glassmorphism design, which relied on visible borders.  
 - **Decision:** I manually audited the affected components and overrode or removed conflicting default classes. I chose to make sure my custom design system always took priority, keeping the UI consistent and polished.  
 
+## 🛠️ Technical Decisions
 
+During development, I made a few specific technical decisions that diverged from or expanded upon the original assignment requirements. These choices were made deliberately to build a more logical, user-friendly, and feature-rich application that better reflects a real-world product.
 
+### 1. Placing the Kanban Board Under Job Details
+-   **Requirement:** The assignment listed the Kanban board for moving candidates between stages under the main "Candidates" section.
+-   **My Implementation:** I made the significant architectural decision to place the Kanban board on the **Job Details** page (`/jobs/:slug`).
+-   **Rationale:** A hiring pipeline is fundamentally tied to a specific job opening. A candidate's stage (e.g., "Tech Interview," "Offer") only makes sense in the context of the job they applied for. Placing the Kanban board on the job details page creates a logical, intuitive user flow where the HR manager can see and manage the entire pipeline for one specific role at a time. A global Kanban board would be confusing and less practical. This was the most important structural change I made to the project's design.
 
+### 2. Expanding "Attach Notes" to a Full Commenting System
+-   **Requirement:** The assignment asked to "Attach notes with @mentions" for candidates.
+-   **My Implementation:** I implemented this requirement in two key areas to create a more comprehensive communication system:
+    1.  **During Stage Changes:** When moving a candidate on the Kanban board, a modal prompts the user to add an optional note explaining the stage change (e.g., "Passed the technical screen, moving to Offer").
+    2.  **On the Candidate Profile:** I added a dedicated "Add a note" component directly on the candidate's profile page, allowing for general comments and discussion at any time.
+-   **Rationale:** This dual implementation goes beyond a simple "attach note" feature. It creates a complete history and commenting system. The notes on stage changes provide crucial context for the candidate's timeline, while the profile-page comments allow for ongoing team collaboration. Both forms support the required `@mentions` with suggestions.
+
+### 3. User-Friendly URLs: Slugs Instead of IDs
+-   **Requirement:** The document specified deep linking to a job via `/jobs/:jobId`.
+-   **My Implementation:** I chose to implement deep linking using a human-readable slug, resulting in URLs like `/jobs/senior-frontend-engineer-react`.
+-   **Rationale:** While using an ID is functionally correct, using a slug is a superior, modern practice for several reasons:
+    1.  **User Experience:** Slugs are more meaningful and memorable for the user.
+    2.  **SEO:** They are more search-engine friendly.
+    3.  **Descriptiveness:** The URL itself provides context about the page content.
+    I implemented the mock API to ensure these slugs are always generated and are unique, making this a robust enhancement.
+
+### 4. Modal-First Approach for Job Management
+-   **Requirement:** The document allowed for creating/editing a job in "a modal or route."
+-   **My Implementation:** I decided to use a modal for both creating and editing jobs.
+-   **Rationale:** A modal provides a faster and more seamless user experience for simple CRUD (Create, Read, Update, Delete) operations. It keeps the user in the context of the jobs list they were just viewing, avoiding a disruptive full-page navigation. This makes the flow of managing multiple jobs much more efficient.
+
+### 5. A Realistic and Interactive "File Upload Stub"
+-   **Requirement:** The assessment builder needed to include a "file upload stub."
+-   **My Implementation:** I interpreted "stub" to mean a component that is visually and interactively realistic, but non-functional due to the lack of a backend.
+-   **Rationale:** Instead of just showing a disabled button, I built a component that mimics the standard file input experience, including a "drag and drop" zone. Crucially, when a user selects a file, the component updates its state to display the chosen file's name. This provides immediate visual feedback, making the stub *feel* functional and demonstrating how a real implementation would behave, which I believe is a better showcase of UX-focused development.
+
+## 🚀 Future Improvements
+
+While the current application fulfills all the core requirements, I've identified several areas for future enhancement that would elevate it to a production-grade tool.
+
+-   **Independent Scrolling for Assessment Builder Panes:**
+    Currently, the builder and preview panes scroll as a single unit. This can cause a visual misalignment where the question being edited on the left scrolls out of sync with its preview on the right. A key improvement would be to implement two independent scroll containers. This would allow the user to keep the relevant preview question in view at all times, significantly improving the usability of the builder.
+
+-   **Enable Cross-Page Reordering:**
+    The current drag-and-drop reordering for jobs is limited to the items visible on a single page. A powerful feature for managers with many job listings would be to enable cross-page reordering, allowing a user to drag a job from page 1 and drop it onto a position on page 2.
+
+-   **Enhanced Sorting & Filtering:**
+    The lists for jobs and candidates could be enhanced with more advanced sorting options (e.g., sort by creation date, sort candidates alphabetically) to give users more control over how they view their data.
+
+-   **User Authentication & Roles:**
+    Introducing a simple user authentication system would be the first step towards building a true multi-user platform. This would pave the way for features like user roles (e.g., Admin, HR Manager) and the ability to assign specific candidates or jobs to different team members.
 
 
