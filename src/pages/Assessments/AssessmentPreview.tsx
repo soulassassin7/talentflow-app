@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 
 
 const PreviewInput: React.FC<{ question: Question, answer: any, onChange: (value: any) => void }> = ({ question, answer, onChange }) => {
-    const { type, label, options = [], min, max } = question;
+    const { type, label, options = [], min, max, maxLength } = question;
     
     const [error, setError] = useState('');
 
@@ -45,6 +45,17 @@ const PreviewInput: React.FC<{ question: Question, answer: any, onChange: (value
             setError('');
         }
     };
+
+    const handleTextChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const value = e.target.value;
+        onChange(value);
+
+        if (maxLength !== undefined && value.length > maxLength) {
+            setError(`Character limit of ${maxLength} exceeded. (${value.length}/${maxLength})`);
+        } else {
+            setError('');
+        }
+    };
     
     switch (type) {
         case 'numeric':
@@ -74,10 +85,18 @@ const PreviewInput: React.FC<{ question: Question, answer: any, onChange: (value
                     <label className="block text-sm font-medium text-gray-300 mb-1">{label}</label>
                     <Input 
                         value={answer || ''} 
-                        onChange={(e) => onChange(e.target.value)} 
+                        onChange={handleTextChange} 
                         type='text' 
-                        className="w-full bg-white/[0.03] border-white/10 text-white placeholder:text-gray-500 focus:outline-none focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20" 
+                        className={`
+                            w-full bg-white/[0.03] border text-white placeholder:text-gray-500 
+                            transition-colors duration-200 focus:outline-none
+                            ${error 
+                                ? 'border-red-500/50 focus:border-red-500/50 focus:ring-2 focus:ring-red-500/20' 
+                                : 'border-white/10 focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20'
+                            }
+                        `} 
                     />
+                    {error && <p className="mt-1.5 text-xs text-red-400">{error}</p>}
                 </div>
             );
             

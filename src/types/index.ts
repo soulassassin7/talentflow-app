@@ -42,10 +42,12 @@ export interface Question {
   options?: { value: string }[];
   min?: number;
   max?: number;
+  maxLength?: number;
   condition?: {
     questionId: string;
     value: string;
   };
+  
 }
 
 export interface AssessmentSection {

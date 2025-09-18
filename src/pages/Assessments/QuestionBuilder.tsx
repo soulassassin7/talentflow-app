@@ -83,6 +83,21 @@ const SingleQuestionEditor: React.FC<{ sectionIndex: number; questionIndex: numb
                     />
                     <label htmlFor={`required-${currentQuestionId}`} className="text-sm font-medium text-gray-300">Required</label>
                 </div>
+
+                {questionType === 'short-text' && (
+                    <div className="flex items-center gap-2 text-sm">
+                        <label className="text-gray-400">Max Length:</label>
+                        <Input 
+                            type="number" 
+                            {...register(`sections.${sectionIndex}.questions.${questionIndex}.maxLength`, { 
+                                valueAsNumber: true,
+                                min: { value: 1, message: "Must be positive" } 
+                            })} 
+                            placeholder="e.g., 100" 
+                            className="w-24 bg-white/[0.03] border-white/10 text-white placeholder:text-gray-600 focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20" 
+                        />
+                    </div>
+                )}
                 
                 {questionType === 'numeric' && (
                     <div className="flex items-center gap-2 text-sm">
