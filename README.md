@@ -1,6 +1,6 @@
 # TALENTFLOW 🚀
 
-A modern, front-end-only recruitment platform built with React and TypeScript.
+A modern, front-end-only recruitment platform built with **React, TypeScript, and Vite**, with a simulated backend powered by **MSW (Mock Service Worker)** and **IndexedDB (Dexie.js)**.
 
 **Live Demo**: [https://mdsibtain-talentflow-app.vercel.app](https://mdsibtain-talentflow-app.vercel.app)
 
