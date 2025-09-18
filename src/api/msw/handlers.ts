@@ -103,7 +103,7 @@ http.post('/api/jobs', async ({ request }) => {
 
     http.patch('/api/jobs/:id/reorder',async ({request,params}) =>{
         await randomLatency();
-        if(randomFailure(0.08)){
+        if(randomFailure(0.09)){
             return HttpResponse.json({message:'Simulated reorder failure'},{status:500});
         }
         const {id} = params as {id: string};
@@ -128,7 +128,7 @@ http.post('/api/jobs', async ({ request }) => {
 
     http.delete('/api/jobs/:id', async ({ params }) => {
         await randomLatency();
-        if (randomFailure(0.06)) {
+        if (randomFailure(0.05)) {
             return HttpResponse.json({ message: 'Simulated delete failure' }, { status: 500 });
         }
         
