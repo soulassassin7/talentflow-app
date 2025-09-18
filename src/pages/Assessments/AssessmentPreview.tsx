@@ -36,8 +36,7 @@ const PreviewInput: React.FC<{ question: Question, answer: any, onChange: (value
         if (min !== undefined && numValue < min) {
             setError(`Value must be ${min} or greater.`);
             outOfRange = true;
-        }
-        if (max !== undefined && numValue > max) {
+        } else if (max !== undefined && numValue > max) {
             setError(`Value must be ${max} or less.`);
             outOfRange = true;
         }
@@ -77,7 +76,7 @@ const PreviewInput: React.FC<{ question: Question, answer: any, onChange: (value
                         value={answer || ''} 
                         onChange={(e) => onChange(e.target.value)} 
                         type='text' 
-                        className="w-full bg-white/[0.03] border-white/10 text-white placeholder:text-gray-500 focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20" 
+                        className="w-full bg-white/[0.03] border-white/10 text-white placeholder:text-gray-500 focus:outline-none focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20" 
                     />
                 </div>
             );
@@ -90,7 +89,7 @@ const PreviewInput: React.FC<{ question: Question, answer: any, onChange: (value
                         value={answer || ''} 
                         onChange={(e) => onChange(e.target.value)} 
                         rows={3} 
-                        className="mt-1 w-full bg-white/[0.03] border border-white/10 text-white placeholder:text-gray-500 rounded-md px-3 py-2 focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20 resize-none" 
+                        className="mt-1 w-full bg-white/[0.03] border border-white/10 text-white placeholder:text-gray-500 rounded-md px-3 py-2 focus:outline-none focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20 resize-none" 
                     />
                 </div>
             );

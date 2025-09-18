@@ -390,8 +390,20 @@ html::-webkit-scrollbar-thumb:hover {
   background-clip: content-box;
 }
 
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
 @media (prefers-color-scheme: dark) {
   html::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.02);
   }
 }
+

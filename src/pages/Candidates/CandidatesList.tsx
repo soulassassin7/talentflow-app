@@ -36,7 +36,7 @@ const CandidatesListPage: React.FC = () => {
   const [feedbackType, setFeedbackType] = useState<'success' | 'error'>('success');
 
   const { data, isLoading, isError, error } = useCandidates({ 
-    pageSize: 10000, 
+    pageSize: 10000,
     stage: stageFilter
   });
   
@@ -169,20 +169,12 @@ const CandidatesListPage: React.FC = () => {
   return (
     <>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Candidates</h1>
-            <p className="text-sm text-gray-400">
-              Manage and track your candidate pipeline
-            </p>
-          </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-emerald-500 hover:bg-emerald-600 text-black shadow-lg shadow-emerald-500/25 transition-all hover:shadow-emerald-500/40 hover:scale-105 rounded-lg"
-          >
-            <UserPlusIcon className="h-5 w-5" />
-            Add Candidate
-          </button>
+        
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-white mb-2">Candidates</h1>
+          <p className="text-sm text-gray-400">
+            Manage and track your candidate pipeline
+          </p>
         </div>
 
         <Card className="shadow-sm bg-white/[0.02] backdrop-blur-2xl border border-white/10">
@@ -236,12 +228,20 @@ const CandidatesListPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="mt-6 pt-6 border-t border-white/10">
+    
+            <div className="mt-6 pt-6 border-t border-white/10 flex justify-between items-center">
               <div className="text-sm text-gray-400">
                 {data && (
-                  <span>Showing {filteredCandidates.length} of {data.total} candidates</span>
+                  <span>Showing {filteredCandidates.length} of {data.items.length} candidates</span>
                 )}
               </div>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-emerald-500 hover:bg-emerald-600 text-black shadow-lg shadow-emerald-500/25 transition-all hover:shadow-emerald-500/40 hover:scale-105 rounded-lg"
+              >
+                <UserPlusIcon className="h-5 w-5" />
+                Add Candidate
+              </button>
             </div>
           </CardContent>
         </Card>
