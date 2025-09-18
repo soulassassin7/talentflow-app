@@ -83,26 +83,26 @@ The core of the application simulates a real-world architecture locally:
 
 Clone the repository:
 
-```bash
+
 git clone <your-repository-url>
 cd talentflow
-
 Install dependencies:
 
+
 npm install
-
-
 Run the development server:
 
+
 npm run dev
-
-
 The application will be available at http://localhost:5173. MSW and the IndexedDB seeding will start automatically.
 
 Available Scripts
-
 npm run dev: Starts the development server with Hot Module Replacement.
 
 npm run build: Builds the application for production.
 
 npm run preview: Serves the production build locally for testing.
+
+
+
+
