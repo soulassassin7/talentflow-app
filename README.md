@@ -107,6 +107,47 @@ Available Scripts
 
 `npm run build`: Builds the application for production.
 
+## 📝 Issues & Technical Decisions
+
+This section documents key technical challenges I encountered during development and the decisions I made to address them.
+
+### 1. Kanban Card Position on Drop
+- **Issue:** When dragging a candidate card to a new column on the Kanban board, the card correctly updated its stage but visually jumped to the end of the list on drop, instead of staying where I dropped it.  
+- **Root Cause Analysis:** I traced this to a race condition between the optimistic UI update managed by `dnd-kit` and the cache invalidation from TanStack Query after the API call succeeded. Since the Candidate data model didn’t have a dedicated `order` field, the "true" order was only known by the database.  
+- **Decision & Trade-off:** I decided to prioritize core functionality (successful stage change + smooth drag-and-drop UX) over perfect positional persistence. The stage assignment is always correct, even if the position resets. A future improvement would be to add an `order` field and a dedicated API call to update it.  
+
+---
+
+### 2. Note Modal Timing After Drag
+- **Issue:** The modal for adding a note after moving a candidate between columns would sometimes fail to appear on the first attempt.  
+- **Root Cause Analysis:** Rapid state changes and component re-renders triggered by the drag-end event interfered with the modal’s mounting lifecycle.  
+- **Solution:** I introduced a small `setTimeout` delay (200ms) before setting the modal’s `isOpen` state. This gave the drag-and-drop animation and state updates enough time to settle, so the modal mounted reliably.  
+
+---
+
+### 3. Reordering a Paginated List
+- **Challenge:** Implementing drag-and-drop reordering for jobs across multiple paginated pages is complex — it would mean fetching all data, managing heavy client-side state, and syncing it back with server pagination.  
+- **Decision & Workaround:** Instead of over-engineering, I gave users a practical UX workaround: the "Per Page" filter lets them select a high number (e.g., 30) to show all jobs on a single view. This way, reordering works seamlessly without cross-page state management complexity.  
+
+---
+
+### 4. The "Unexpected token '<'" Error
+- **Issue:** Occasionally the app crashed with `Unexpected token '<'... <!doctype...` when left idle in development or on deployment.  
+- **Root Cause Analysis:** This happened because the fetch client was designed to strictly receive `application/json` from API endpoints. In certain cases, it instead received the full HTML document of the application. When the app tried to parse this HTML (`<!doctype html>...`) as JSON, it crashed. A similar race condition involving Vite’s Hot Module Replacement also caused the same error during development.  
+- **Solution:** In `src/api/client.ts`, I made the fetch wrapper defensive. It now inspects the `Content-Type` header, and if the response is `text/html` (or anything non-JSON), it throws a controlled error (e.g., "MSW interception failed..."). This prevented crashes and let TanStack Query handle errors gracefully, so the UI now shows proper error messages instead of breaking.  
+
+---
+
+### 5. Synchronized Horizontal Scrollbars
+- **Challenge:** On the wide Kanban board, I wanted a second scrollbar at the top, synchronized with the main one at the bottom. Browsers don’t support this natively.  
+- **Solution:** I attached `useRef` hooks to both scrollable containers and added `onScroll` listeners. Whenever one scrollbar moved, I programmatically set the other’s `scrollLeft`. This gave a smooth, intuitive dual-scrollbar experience.  
+
+---
+
+### 6. Styling System & Specificity
+- **Challenge:** While `shadcn/ui` + Tailwind CSS worked great, I hit conflicts between the library’s reset classes (like `border-0`) and my glassmorphism design, which relied on visible borders.  
+- **Decision:** I manually audited the affected components and overrode or removed conflicting default classes. I chose to make sure my custom design system always took priority, keeping the UI consistent and polished.  
+
 
 
 
